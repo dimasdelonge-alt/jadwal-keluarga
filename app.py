@@ -147,7 +147,6 @@ def draw_calendar(year, month, shifts):
 
             # 3. SENIN - KAMIS
             if 1 <= col_idx <= 4:
-                # --- PAGI HARI ---
                 if stt['is_post_night'] and stt['school_active']:
                      w("07.00 - 09.30", 0, weight='bold', color='red')
                      w("ANTAR 2 ANAK", 1, size=7.5, weight='bold', color='red')
@@ -158,7 +157,6 @@ def draw_calendar(year, month, shifts):
                 else:
                     w("LIBUR SEKOLAH", 0, color='#e67e22', weight='bold', size=8)
 
-                # --- TENGAH HARI ---
                 line_start = 2.5
                 
                 if stt['wife_home']:
@@ -169,9 +167,6 @@ def draw_calendar(year, month, shifts):
                     w("(Istri Malam)", line_start, color='#555', size=7)
                     if not stt['is_post_night']:
                         w("HANA DI RUMAH", line_start+1, color=C_GROOMING, weight='bold', size=7) 
-                        
-                        # --- PERBAIKAN DI SINI (MALAM) ---
-                        # Dulu: Menyatu. Sekarang: Dipisah.
                         w("10.00", line_start+2, color=C_TIME, weight='bold', size=7)
                         w("GROOMING", line_start+2.8, color=C_GROOMING, weight='bold', size=7)
                     else:
@@ -180,10 +175,8 @@ def draw_calendar(year, month, shifts):
 
                 elif stt['shift'] == "Siang":
                     w(f"(Istri {stt['shift']})", line_start, color='#555', size=7)
-                    # --- PERBAIKAN DI SINI (SIANG) ---
                     w("10.00", line_start+1, color=C_TIME, weight='bold', size=7)
                     w("GROOMING", line_start+1.8, color=C_GROOMING, weight='bold', size=7)
-                    
                     w("16.30 JMPT HANA", 5.5, color='red', weight='bold', size=7)
 
                 else:
@@ -204,7 +197,6 @@ def draw_calendar(year, month, shifts):
                     if stt['wife_home']: wife_status = "(Istri Libur)"
                     w(wife_status, 1.7, color='#555', size=7)
 
-                    # LOGIKA JUMAT MALAM
                     if stt['shift'] == "Malam" and not stt['is_post_night']:
                         w("HANA DI RUMAH", 2.8, color=C_GROOMING, weight='bold', size=7)
                     else:
@@ -214,7 +206,6 @@ def draw_calendar(year, month, shifts):
                     w("12.30 - 14.30", 5.0, weight='bold', color=C_TIME)
                     w("TERAPI", 5.9, size=7, color=C_TERAPI, weight='bold')
                     
-                    # Slot Sore
                     if stt['shift'] == "Siang":
                         w("16.30 JMPT HANA", 7.5, weight='bold', color='red', size=7)
                     else:
@@ -245,17 +236,21 @@ def draw_calendar(year, month, shifts):
                 
                 w(status_txt, 0, size=7, color='#555')
                 
-                w("09.30", 1.0, color=C_TIME, weight='bold')
-                w("TERAPI", 1.8, color=C_TERAPI, weight='bold')
+                if stt['shift'] == "Malam" and stt['is_post_night']:
+                    w("09.30", 1.0, color='red', weight='bold')
+                    w("TERAPI + ANTAR HANA", 1.8, color='red', weight='bold', size=6.5)
+                else:
+                    w("09.30", 1.0, color=C_TIME, weight='bold')
+                    w("TERAPI", 1.8, color=C_TERAPI, weight='bold')
                 
                 w("12.00", 3.0, color=C_TIME, weight='bold')
                 w("GROOMING", 3.8, color=C_GROOMING, weight='bold')
 
-                if not stt['wife_home'] and stt['shift'] == "Siang":
-                     w("16.30 JMPT HANA", 5.2, color='red', weight='bold', size=7)
-                
-                if not stt['wife_home'] and stt['shift'] == "Malam" and not stt['is_post_night']:
-                    w("HANA DI RUMAH", 5.2, color=C_GROOMING, weight='bold', size=7)
+                if not stt['wife_home']:
+                    if stt['shift'] == "Malam" and not stt['is_post_night']:
+                        w("HANA DI RUMAH", 5.2, color=C_GROOMING, weight='bold', size=7)
+                    else:
+                        w("14.30 JMPT HANA", 5.2, color='red', weight='bold', size=7)
 
     return fig
 
@@ -281,10 +276,18 @@ with col_left:
     
     with st.form("input_shift"):
         st.write(f"**Shift Istri ({bulan_pilihan} 2026):**")
-        grid = st.columns(4)
+        
+        # --- PERBAIKAN TAMPILAN HP (URUT BARIS) ---
+        cols = None
         for d in range(1, num_days + 1):
-            col = grid[(d-1) % 4]
+            # Buat Baris Baru setiap 4 item
+            if (d - 1) % 4 == 0:
+                cols = st.columns(4)
             
+            # Pilih kolom di baris tersebut
+            col = cols[(d - 1) % 4]
+            
+            # Logic Default
             def_idx = 0 
             if month_int == 1 and (d <= 17 or d == 24 or d == 30): 
                 def_idx = 3 
