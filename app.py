@@ -151,7 +151,6 @@ def draw_calendar(year, month, shifts):
     # Judul
     month_name = calendar.month_name[month].upper()
     plt.text(0.5, 0.98, f"JADWAL {month_name} {year}", ha='center', va='center', fontsize=28, weight='bold', color=C_HEADER)
-    plt.text(0.5, 0.955, "Fitur Baru: Download Alarm (.ics) untuk Google Calendar di HP", ha='center', va='center', fontsize=12, color='#555')
 
     # Header Hari
     days_header = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU']
@@ -393,3 +392,4 @@ with col_right:
 
     else:
         st.info("Klik tombol GENERATE untuk melihat jadwal.")
+
