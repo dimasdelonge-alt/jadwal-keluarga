@@ -2,6 +2,9 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import calendar
+from ics import Calendar as IcsCalendar, Event
+from datetime import datetime, timedelta
+import pytz
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="Family Shift Sync", layout="wide")
@@ -37,7 +40,7 @@ C_GROOMING = '#2e7d32'  # Hijau Tua
 C_TIME = '#ef6c00'      # ORANYE
 C_HOLIDAY_BG = '#ffcdd2' 
 
-# --- FUNGSI LOGIKA ---
+# --- FUNGSI LOGIKA STATUS ---
 def get_status(day, month, year, shift_istri, prev_shift):
     holiday_name = HOLIDAYS.get((month, day))
     
@@ -57,7 +60,85 @@ def get_status(day, month, year, shift_istri, prev_shift):
         "is_post_night": is_post_night
     }
 
-# --- FUNGSI GAMBAR KALENDER ---
+# --- FUNGSI GENERATE ALARM (ICS FILE) ---
+def generate_ics_file(year, month, shifts):
+    c = IcsCalendar()
+    num_days = calendar.monthrange(year, month)[1]
+    
+    # Timezone WIB
+    wib = pytz.timezone("Asia/Jakarta")
+
+    for d in range(1, num_days + 1):
+        # Cek logika hari ini
+        prev_s = "Pagi"
+        if d > 1: prev_s = shifts[d-1]
+        
+        stt = get_status(d, month, year, shifts[d], prev_s)
+        current_date = datetime(year, month, d)
+        weekday = current_date.weekday() # 0=Senin, 5=Sabtu, 6=Minggu
+        
+        # --- LOGIKA ALARM ANTAR JEMPUT ---
+        
+        # 1. Alarm JEMPUT HANA
+        # Syarat: Istri TIDAK di rumah (Kerja/PostNight) DAN bukan libur keluarga
+        if not stt['wife_home']: 
+            pickup_time = None
+            note = ""
+            
+            # SABTU: Jemput 14.30 (Kecuali Malam Pertama)
+            if weekday == 5: # Sabtu
+                if stt['shift'] == "Malam" and not stt['is_post_night']:
+                    pass # Aman, hana di rumah
+                else:
+                    pickup_time = "14:30"
+                    note = "⚠️ PENITIPAN TUTUP 15.00!"
+            
+            # SENIN-JUMAT: Jemput 16.30 (Hanya jika Istri Siang)
+            # Kalau Istri Pagi/Malam, asumsi Istri yang handle sore atau ada di rumah
+            elif weekday <= 4: # Senin-Jumat
+                 if stt['shift'] == "Siang":
+                     pickup_time = "16:30"
+                     note = "Istri Shift Siang"
+
+            # Create Event JEMPUT
+            if pickup_time:
+                e = Event()
+                e.name = f"🚗 JEMPUT HANA ({pickup_time})"
+                h, m = map(int, pickup_time.split(':'))
+                # Set waktu start
+                start_dt = datetime(year, month, d, h, m)
+                e.begin = wib.localize(start_dt)
+                e.duration = timedelta(minutes=30)
+                e.description = f"{note} - Jadwal Otomatis Family App"
+                e.alarms = [timedelta(minutes=-30)] # Alarm bunyi 30 menit sebelum
+                c.events.add(e)
+
+        # 2. Alarm ANTAR TERAPI/SEKOLAH (Spesial Case)
+        # Sabtu Malam Kedua: Terapi + Antar hana 09.30
+        if weekday == 5 and stt['shift'] == "Malam" and stt['is_post_night']:
+            e = Event()
+            e.name = "🏥 TERAPI + ANTAR HANA (09.30)"
+            start_dt = datetime(year, month, d, 9, 30)
+            e.begin = wib.localize(start_dt)
+            e.duration = timedelta(hours=1)
+            e.description = "Istri Post-Night (Tidur). Bawa HANA sekalian."
+            e.alarms = [timedelta(minutes=-30)]
+            c.events.add(e)
+            
+        # Jumat/Senin-Kamis Post Night: Antar 2 Anak 07.00
+        if weekday <= 4 and stt['is_post_night'] and stt['school_active']:
+            e = Event()
+            e.name = "🏫 ANTAR 2 ANAK (07.00)"
+            start_dt = datetime(year, month, d, 7, 0)
+            e.begin = wib.localize(start_dt)
+            e.duration = timedelta(minutes=30)
+            e.description = "Istri Post-Night. Antar Abang & HANA."
+            e.alarms = [timedelta(minutes=-15)]
+            c.events.add(e)
+
+    return c.serialize()
+
+# --- FUNGSI GAMBAR KALENDER (VISUAL) ---
 def draw_calendar(year, month, shifts):
     cal_obj = calendar.Calendar(firstweekday=6)
     month_days = cal_obj.monthdayscalendar(year, month)
@@ -70,6 +151,7 @@ def draw_calendar(year, month, shifts):
     # Judul
     month_name = calendar.month_name[month].upper()
     plt.text(0.5, 0.98, f"JADWAL {month_name} {year}", ha='center', va='center', fontsize=28, weight='bold', color=C_HEADER)
+    plt.text(0.5, 0.955, "Fitur Baru: Download Alarm (.ics) untuk Google Calendar di HP", ha='center', va='center', fontsize=12, color='#555')
 
     # Header Hari
     days_header = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU']
@@ -110,7 +192,7 @@ def draw_calendar(year, month, shifts):
             if col_idx == 0 or stt['holiday_name']: t_color = C_HIGHLIGHT
             plt.text(x_pos + col_width - 0.015, y_pos + row_height - 0.02, str(d), ha='right', va='top', fontsize=16, weight='bold', color=t_color)
             
-            # --- TULISAN KONTEN ---
+            # --- TULISAN KONTEN VISUAL ---
             def w(text, line, color='#000', size=7.5, weight='normal'):
                 spacing = 0.0135
                 top_margin = 0.06 
@@ -158,11 +240,9 @@ def draw_calendar(year, month, shifts):
                     w("LIBUR SEKOLAH", 0, color='#e67e22', weight='bold', size=8)
 
                 line_start = 2.5
-                
                 if stt['wife_home']:
                     w("(Istri Libur)", line_start, color='#555', size=7)
                     w("GROOMING", line_start+1, color=C_GROOMING, weight='bold')
-                
                 elif stt['shift'] == "Malam":
                     w("(Istri Malam)", line_start, color='#555', size=7)
                     if not stt['is_post_night']:
@@ -172,13 +252,11 @@ def draw_calendar(year, month, shifts):
                     else:
                         w("10.00", line_start+1, color=C_TIME, weight='bold')
                         w("GROOMING", line_start+1.8, color=C_GROOMING, weight='bold')
-
                 elif stt['shift'] == "Siang":
                     w(f"(Istri {stt['shift']})", line_start, color='#555', size=7)
                     w("10.00", line_start+1, color=C_TIME, weight='bold', size=7)
                     w("GROOMING", line_start+1.8, color=C_GROOMING, weight='bold', size=7)
                     w("16.30 JMPT HANA", 5.5, color='red', weight='bold', size=7)
-
                 else:
                     w(f"(Istri {stt['shift']})", line_start, color='#555', size=7)
                     w("10.00", line_start+1, color=C_TIME, weight='bold')
@@ -213,14 +291,11 @@ def draw_calendar(year, month, shifts):
                         w("GROOMING", 8.1, size=7, color=C_GROOMING, weight='bold')
                 else:
                     w("LIBUR SEKOLAH", 0, color='#e67e22', weight='bold', size=8)
-                    
                     wife_status = f"(Istri {stt['shift']})"
                     if stt['wife_home']: wife_status = "(Istri Libur)"
                     w(wife_status, 1.5, color='#555', size=7)
-
                     w("12.30", 3, color=C_TIME, weight='bold')
                     w("TERAPI", 3.8, color=C_TERAPI, weight='bold')
-                    
                     if stt['shift'] == "Siang":
                          w("16.30 JMPT HANA", 7.5, weight='bold', color='red', size=7)
                     else:
@@ -229,11 +304,9 @@ def draw_calendar(year, month, shifts):
             # 5. SABTU
             elif col_idx == 6:
                 offset = 0
-                
                 status_txt = f"(Istri {stt['shift']})"
                 if stt['is_post_night']: status_txt = "(Istri Plg Pagi)"
                 if stt['wife_home']: status_txt = "(Istri Libur)"
-                
                 w(status_txt, 0, size=7, color='#555')
                 
                 if stt['shift'] == "Malam" and stt['is_post_night']:
@@ -276,18 +349,12 @@ with col_left:
     
     with st.form("input_shift"):
         st.write(f"**Shift Istri ({bulan_pilihan} 2026):**")
-        
-        # --- PERBAIKAN TAMPILAN HP (URUT BARIS) ---
         cols = None
         for d in range(1, num_days + 1):
-            # Buat Baris Baru setiap 4 item
             if (d - 1) % 4 == 0:
                 cols = st.columns(4)
-            
-            # Pilih kolom di baris tersebut
             col = cols[(d - 1) % 4]
             
-            # Logic Default
             def_idx = 0 
             if month_int == 1 and (d <= 17 or d == 24 or d == 30): 
                 def_idx = 3 
@@ -300,13 +367,29 @@ with col_left:
 
 with col_right:
     if submitted:
-        st.header("2. Hasil Kalender")
+        st.header("2. Hasil Kalender & Alarm")
+        
+        # 1. Gambar Kalender Visual
         fig = draw_calendar(2026, month_int, user_shifts)
         st.pyplot(fig)
         
-        fn = f"Jadwal_{bulan_pilihan}_2026.png"
-        plt.savefig(fn, bbox_inches='tight', dpi=200)
-        with open(fn, "rb") as img:
-            st.download_button("📥 Download Gambar", img, fn, "image/png")
+        # Tombol Download Gambar
+        col_dl1, col_dl2 = st.columns(2)
+        fn_img = f"Jadwal_{bulan_pilihan}_2026.png"
+        plt.savefig(fn_img, bbox_inches='tight', dpi=200)
+        with open(fn_img, "rb") as img:
+            col_dl1.download_button("📥 Download Gambar", img, fn_img, "image/png")
+        
+        # 2. GENERATE ALARM (.ICS)
+        ics_data = generate_ics_file(2026, month_int, user_shifts)
+        fn_ics = f"Alarm_Jadwal_{bulan_pilihan}_2026.ics"
+        col_dl2.download_button(
+            label="⏰ Download Alarm (Kalender HP)",
+            data=ics_data,
+            file_name=fn_ics,
+            mime="text/calendar"
+        )
+        st.caption("ℹ️ Cara Pakai Alarm: Klik tombol 'Download Alarm', buka file-nya di HP, lalu pilih 'Add All to Calendar'. HP akan otomatis bunyi 30 menit sebelum jadwal Jemput/Antar!")
+
     else:
         st.info("Klik tombol GENERATE untuk melihat jadwal.")
