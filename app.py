@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import pytz
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Family Shift Sync", layout="wide")
+st.set_page_config(page_title="Family Shift Sync")
 
 # --- DATABASE LIBUR 2026 ---
 HOLIDAYS = {
@@ -392,4 +392,5 @@ with col_right:
 
     else:
         st.info("Klik tombol GENERATE untuk melihat jadwal.")
+
 
