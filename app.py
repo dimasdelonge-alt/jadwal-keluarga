@@ -9,26 +9,25 @@ import pytz
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="Family Shift Sync")
 
-# --- DATABASE LIBUR 2026 (REVISI FINAL) ---
-# Sumber: Estimasi Kalender SKB 3 Menteri 2026
+# --- DATABASE LIBUR 2026 (FINAL REVISI) ---
 HOLIDAYS = {
     (1, 1): "TAHUN BARU",
     (1, 16): "ISRA MI'RAJ",
-    (2, 17): "IMLEK",          # REVISI: Selasa, 17 Feb
+    (2, 17): "IMLEK",          
     (3, 19): "NYEPI",
-    (3, 20): "CUTI BERSAMA",   # Cuti Nyepi/Lebaran
-    (3, 21): "IDUL FITRI",     # REVISI: 21-22 Maret
+    (3, 20): "CUTI BERSAMA",   
+    (3, 21): "IDUL FITRI",     
     (3, 22): "IDUL FITRI",
-    (3, 31): "PASKAH",         # Estimasi (Wafat Isa Almasih biasanya April, cek ulang nanti)
-    (4, 3):  "WAFAT ISA ALMASIH", # Jumat Agung 2026
+    (3, 31): "PASKAH",         
+    (4, 3):  "WAFAT ISA ALMASIH", 
     (5, 1): "HARI BURUH",
     (5, 14): "KENAIKAN ISA",
-    (5, 27): "IDUL ADHA",      # REVISI: Mei, bukan Juni
+    (5, 27): "IDUL ADHA",      
     (5, 31): "WAISAK",
     (6, 1): "PANCASILA",
-    (6, 16): "1 MUHARRAM",     # REVISI: Tahun Baru Islam
+    (6, 16): "1 MUHARRAM",     
     (8, 17): "KEMERDEKAAN",
-    (8, 25): "MAULID NABI",    # REVISI: Agustus
+    (8, 25): "MAULID NABI",    
     (12, 25): "NATAL"
 }
 
@@ -49,9 +48,9 @@ def get_status(day, month, year, shift_istri, prev_shift):
 
     school_active = True
     if month == 1 and day < 5: school_active = False
-    if month == 6 and day > 20: school_active = False # Libur Semester Genap (Estimasi)
-    if month == 7 and day < 15: school_active = False # Libur Kenaikan Kelas
-    if month == 12 and day > 20: school_active = False # Libur Semester Ganjil
+    if month == 6 and day > 20: school_active = False 
+    if month == 7 and day < 15: school_active = False 
+    if month == 12 and day > 20: school_active = False 
     if holiday_name: school_active = False
 
     wife_home = True if shift_istri == "Libur" else False
@@ -84,7 +83,7 @@ def generate_ics_file(year, month, shifts):
             pickup_time = None
             note = ""
 
-            # Jika Tanggal Merah & Istri Kerja -> Libur total (Jaga Anak)
+            # Jika Tanggal Merah & Istri Kerja -> Libur total
             if stt['holiday_name']:
                 pass
 
@@ -325,7 +324,10 @@ def draw_calendar(year, month, shifts):
 # --- TAMPILAN APLIKASI ---
 st.title("📅 Aplikasi Jadwal Keluarga")
 
-col_left, col_right = st.columns([1, 2])
+# --- PERBAIKAN TAMPILAN PC ---
+# Gunakan rasio [1, 1] agar kolom kiri (Input) lebih lebar
+# Sebelumnya [1, 2] membuat input terjepit di PC mode "Centered"
+col_left, col_right = st.columns([1, 1])
 
 with col_left:
     st.header("1. Input Shift")
@@ -346,9 +348,10 @@ with col_left:
         st.write(f"**Shift Istri ({bulan_pilihan} 2026):**")
         cols = None
         for d in range(1, num_days + 1):
-            if (d - 1) % 4 == 0:
-                cols = st.columns(4)
-            col = cols[(d - 1) % 4]
+            # UBAH: Gunakan 3 kolom saja (jangan 4) agar tidak gepeng di PC
+            if (d - 1) % 3 == 0:
+                cols = st.columns(3)
+            col = cols[(d - 1) % 3]
 
             def_idx = 0
             if month_int == 1 and (d <= 17 or d == 24 or d == 30):
