@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import pytz
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Family Shift Sync")
+st.set_page_config(page_title="Family Shift Sync (Revisi Logic)")
 
 # --- DATABASE LIBUR 2026 (FINAL REVISI) ---
 HOLIDAYS = {
@@ -22,12 +22,12 @@ HOLIDAYS = {
     (4, 3):  "WAFAT ISA ALMASIH", 
     (5, 1): "HARI BURUH",
     (5, 14): "KENAIKAN ISA",
-    (5, 27): "IDUL ADHA",      
+    (5, 27): "IDUL ADHA",       
     (5, 31): "WAISAK",
     (6, 1): "PANCASILA",
     (6, 16): "1 MUHARRAM",     
     (8, 17): "KEMERDEKAAN",
-    (8, 25): "MAULID NABI",    
+    (8, 25): "MAULID NABI",     
     (12, 25): "NATAL"
 }
 
@@ -192,15 +192,26 @@ def draw_calendar(year, month, shifts):
                 yt = y_pos + row_height - top_margin - (line * spacing)
                 plt.text(x_pos + 0.015, yt, text, ha='left', va='top', fontsize=size, color=color, weight=weight)
 
-            # 1. TANGGAL MERAH
+            # 1. TANGGAL MERAH (REVISI LOGIC DISINI)
             if stt['holiday_name']:
                 w(stt['holiday_name'], 0, color=C_HIGHLIGHT, weight='bold', size=8)
                 w("(LIBUR)", 1, color=C_HIGHLIGHT, weight='bold')
 
+                # Cek apakah Shift Malam start hari ini (siangnya masih di rumah)
+                is_night_shift_start = (stt['shift'] == "Malam" and not stt['is_post_night'])
+
                 if stt['wife_home']:
                      w("(Istri Libur)", 2.5, color='#555', size=7)
                      w("GROOMING", 3.5, color=C_GROOMING, weight='bold')
+                
+                elif is_night_shift_start:
+                     # Istri Shift Malam, tapi siangnya di rumah = AMAN
+                     w(f"(Istri {stt['shift']})", 2.5, color='#555', size=7)
+                     w("HANA DI RUMAH", 3.5, color=C_GROOMING, weight='bold', size=7)
+                     w("GROOMING", 4.3, color=C_GROOMING, weight='bold')
+                
                 else:
+                     # Istri Shift Pagi/Siang/Post-Night = BAHAYA (Daycare tutup)
                      w(f"(Istri {stt['shift']})", 2.5, color='#555', size=7)
                      w("JAGA ANAK", 3.5, color='red', size=10, weight='bold')
                      w("PENITIPAN TUTUP", 4.5, color='red', size=7)
@@ -326,7 +337,6 @@ st.title("📅 Aplikasi Jadwal Keluarga")
 
 # --- PERBAIKAN TAMPILAN PC ---
 # Gunakan rasio [1, 1] agar kolom kiri (Input) lebih lebar
-# Sebelumnya [1, 2] membuat input terjepit di PC mode "Centered"
 col_left, col_right = st.columns([1, 1])
 
 with col_left:
