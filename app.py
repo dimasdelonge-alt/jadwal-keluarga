@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import pytz
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Family Shift Sync (Final Logic)", layout="wide")
+st.set_page_config(page_title="Family Shift Sync (Final Text Fix)", layout="wide")
 
 # --- DATABASE LIBUR 2026 ---
 HOLIDAYS = {
@@ -195,7 +195,7 @@ def draw_calendar(year, month, shifts):
                 plt.text(x_pos + 0.015, yt, text, ha='left', va='top', fontsize=size, color=color, weight=weight)
 
             # ==========================================
-            # 1. TANGGAL MERAH (REVISI LOGIC DISINI!)
+            # 1. TANGGAL MERAH (LOGIC SHIFT MALAM)
             # ==========================================
             if stt['holiday_name']:
                 w(stt['holiday_name'], 0, color=C_HIGHLIGHT, weight='bold', size=8)
@@ -205,23 +205,20 @@ def draw_calendar(year, month, shifts):
                 is_night_shift_start = (stt['shift'] == "Malam" and not stt['is_post_night'])
 
                 if stt['wife_home']:
-                     # Istri Libur Full
                      w("(Istri Libur)", 2.5, color='#555', size=7)
                      w("GROOMING", 3.5, color=C_GROOMING, weight='bold')
                 
                 elif is_night_shift_start:
-                     # FIX LOGIC: Shift Malam Pertama -> Siang Aman!
                      w(f"(Istri {stt['shift']})", 2.5, color='#555', size=7)
                      w("SIANG AMAN", 3.5, color=C_GROOMING, weight='bold', size=7)
                      w("GROOMING", 4.3, color=C_GROOMING, weight='bold')
                 
                 else:
-                     # Shift Pagi / Siang / Post-Night (Capek) -> Daycare Tutup -> Jaga Anak
                      w(f"(Istri {stt['shift']})", 2.5, color='#555', size=7)
                      w("JAGA ANAK", 3.5, color='red', size=10, weight='bold')
                      w("PENITIPAN TUTUP", 4.5, color='red', size=7)
                 
-                continue # Skip logika hari biasa
+                continue 
 
             # 2. MINGGU
             if col_idx == 0:
@@ -241,11 +238,13 @@ def draw_calendar(year, month, shifts):
             # 3. SENIN - KAMIS
             if 1 <= col_idx <= 4:
                 if stt['is_post_night'] and stt['school_active']:
-                     w("07.00 - 09.30", 0, weight='bold', color='red')
+                     # REVISI WAKTU SEKOLAH: 07.00 - 10.00
+                     w("07.00 - 10.00", 0, weight='bold', color='red')
                      w("ANTAR 2 ANAK", 1, size=7.5, weight='bold', color='red')
                      w("(Istri Plg Pagi)", 1.8, size=6.5, color='#555')
                 elif stt['school_active']:
-                    w("07.00 - 09.30", 0, weight='bold', color=C_TIME)
+                    # REVISI WAKTU SEKOLAH: 07.00 - 10.00
+                    w("07.00 - 10.00", 0, weight='bold', color=C_TIME)
                     w("Abang Sekolah", 1, size=7.5)
                 else:
                     w("LIBUR SEKOLAH", 0, color='#e67e22', weight='bold', size=8)
@@ -267,7 +266,8 @@ def draw_calendar(year, month, shifts):
                     w(f"(Istri {stt['shift']})", line_start, color='#555', size=7)
                     w("10.00", line_start+1, color=C_TIME, weight='bold', size=7)
                     w("GROOMING", line_start+1.8, color=C_GROOMING, weight='bold', size=7)
-                    w("16.30 JMPT HANA", 5.5, color='red', weight='bold', size=7)
+                    # REVISI TEKS JMPT -> JEMPUT
+                    w("16.30 JEMPUT HANA", 5.5, color='red', weight='bold', size=7)
                 else:
                     w(f"(Istri {stt['shift']})", line_start, color='#555', size=7)
                     w("10.00", line_start+1, color=C_TIME, weight='bold')
@@ -279,7 +279,8 @@ def draw_calendar(year, month, shifts):
                     if stt['is_post_night']:
                          w("07.00 ANTAR 2", 0, weight='bold', color='red')
                     else:
-                         w("07.00 - 09.00", 0, weight='bold', color=C_TIME)
+                         # REVISI WAKTU JUMAT: 07.00 - 09.30
+                         w("07.00 - 09.30", 0, weight='bold', color=C_TIME)
                     w("Abang Sekolah", 0.9, size=7)
 
                     wife_status = f"(Istri {stt['shift']})"
@@ -296,7 +297,8 @@ def draw_calendar(year, month, shifts):
                     w("TERAPI", 5.9, size=7, color=C_TERAPI, weight='bold')
 
                     if stt['shift'] == "Siang":
-                        w("16.30 JMPT HANA", 7.5, weight='bold', color='red', size=7)
+                        # REVISI TEKS JMPT -> JEMPUT
+                        w("16.30 JEMPUT HANA", 7.5, weight='bold', color='red', size=7)
                     else:
                         w("15.00 - 17.00", 7.2, weight='bold', color=C_TIME)
                         w("GROOMING", 8.1, size=7, color=C_GROOMING, weight='bold')
@@ -308,7 +310,8 @@ def draw_calendar(year, month, shifts):
                     w("12.30", 3, color=C_TIME, weight='bold')
                     w("TERAPI", 3.8, color=C_TERAPI, weight='bold')
                     if stt['shift'] == "Siang":
-                         w("16.30 JMPT HANA", 7.5, weight='bold', color='red', size=7)
+                         # REVISI TEKS JMPT -> JEMPUT
+                         w("16.30 JEMPUT HANA", 7.5, weight='bold', color='red', size=7)
                     else:
                          w("GROOMING", 5.2, color=C_GROOMING, weight='bold')
 
@@ -334,7 +337,8 @@ def draw_calendar(year, month, shifts):
                     if stt['shift'] == "Malam" and not stt['is_post_night']:
                         w("HANA DI RUMAH", 5.2, color=C_GROOMING, weight='bold', size=7)
                     else:
-                        w("14.30 JMPT HANA", 5.2, color='red', weight='bold', size=7)
+                        # REVISI TEKS JMPT -> JEMPUT
+                        w("14.30 JEMPUT HANA", 5.2, color='red', weight='bold', size=7)
 
     return fig
 
@@ -368,7 +372,6 @@ with col_left:
             col = cols[(d - 1) % 3]
 
             def_idx = 0
-            # Contoh default shift acak (bisa dihapus jika mau kosong)
             if month_int == 1 and (d <= 17 or d == 24 or d == 30):
                 def_idx = 3
 
