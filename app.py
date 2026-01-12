@@ -7,27 +7,27 @@ from datetime import datetime, timedelta
 import pytz
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Family Shift Sync (Revisi Logic)")
+st.set_page_config(page_title="Family Shift Sync (Final Logic)", layout="wide")
 
-# --- DATABASE LIBUR 2026 (FINAL REVISI) ---
+# --- DATABASE LIBUR 2026 ---
 HOLIDAYS = {
     (1, 1): "TAHUN BARU",
     (1, 16): "ISRA MI'RAJ",
     (2, 17): "IMLEK",          
     (3, 19): "NYEPI",
     (3, 20): "CUTI BERSAMA",   
-    (3, 21): "IDUL FITRI",     
+    (3, 21): "IDUL FITRI",      
     (3, 22): "IDUL FITRI",
-    (3, 31): "PASKAH",         
+    (3, 31): "PASKAH",          
     (4, 3):  "WAFAT ISA ALMASIH", 
     (5, 1): "HARI BURUH",
     (5, 14): "KENAIKAN ISA",
-    (5, 27): "IDUL ADHA",       
+    (5, 27): "IDUL ADHA",        
     (5, 31): "WAISAK",
     (6, 1): "PANCASILA",
-    (6, 16): "1 MUHARRAM",     
+    (6, 16): "1 MUHARRAM",      
     (8, 17): "KEMERDEKAAN",
-    (8, 25): "MAULID NABI",     
+    (8, 25): "MAULID NABI",      
     (12, 25): "NATAL"
 }
 
@@ -46,6 +46,7 @@ C_HOLIDAY_BG = '#ffcdd2'
 def get_status(day, month, year, shift_istri, prev_shift):
     holiday_name = HOLIDAYS.get((month, day))
 
+    # Logika Sekolah (Libur Semester & Tanggal Merah)
     school_active = True
     if month == 1 and day < 5: school_active = False
     if month == 6 and day > 20: school_active = False 
@@ -90,7 +91,7 @@ def generate_ics_file(year, month, shifts):
             # SABTU
             elif weekday == 5:
                 if stt['shift'] == "Malam" and not stt['is_post_night']:
-                    pass
+                    pass # Siang Aman
                 else:
                     pickup_time = "14:30"
                     note = "⚠️ PENITIPAN TUTUP 15.00!"
@@ -171,11 +172,12 @@ def draw_calendar(year, month, shifts):
 
             stt = get_status(d, month, year, shifts[d], prev_s)
 
+            # --- LOGIKA BACKGROUND COLOR ---
             bg_color = C_WORKDAY
             if stt['wife_home']: bg_color = C_LEAVE
-            if col_idx == 0: bg_color = '#ffebee'
-            if stt['holiday_name']: bg_color = C_HOLIDAY_BG
-
+            if col_idx == 0: bg_color = '#ffebee' # Minggu
+            if stt['holiday_name']: bg_color = C_HOLIDAY_BG # Tanggal Merah
+            
             danger_sunday = (col_idx == 0 and (not stt['wife_home'] or stt['is_post_night']))
 
             rect = patches.Rectangle((x_pos, y_pos), col_width, row_height, facecolor=bg_color, edgecolor='#b0bec5', linewidth=1)
@@ -185,37 +187,41 @@ def draw_calendar(year, month, shifts):
             if col_idx == 0 or stt['holiday_name']: t_color = C_HIGHLIGHT
             plt.text(x_pos + col_width - 0.015, y_pos + row_height - 0.02, str(d), ha='right', va='top', fontsize=16, weight='bold', color=t_color)
 
-            # --- TULISAN KONTEN ---
+            # --- FUNGSI TULIS TEKS ---
             def w(text, line, color='#000', size=7.5, weight='normal'):
                 spacing = 0.0135
                 top_margin = 0.06
                 yt = y_pos + row_height - top_margin - (line * spacing)
                 plt.text(x_pos + 0.015, yt, text, ha='left', va='top', fontsize=size, color=color, weight=weight)
 
-            # 1. TANGGAL MERAH (REVISI LOGIC DISINI)
+            # ==========================================
+            # 1. TANGGAL MERAH (REVISI LOGIC DISINI!)
+            # ==========================================
             if stt['holiday_name']:
                 w(stt['holiday_name'], 0, color=C_HIGHLIGHT, weight='bold', size=8)
                 w("(LIBUR)", 1, color=C_HIGHLIGHT, weight='bold')
 
-                # Cek apakah Shift Malam start hari ini (siangnya masih di rumah)
+                # Logika: Start Shift Malam = Siang Masih di Rumah
                 is_night_shift_start = (stt['shift'] == "Malam" and not stt['is_post_night'])
 
                 if stt['wife_home']:
+                     # Istri Libur Full
                      w("(Istri Libur)", 2.5, color='#555', size=7)
                      w("GROOMING", 3.5, color=C_GROOMING, weight='bold')
                 
                 elif is_night_shift_start:
-                     # Istri Shift Malam, tapi siangnya di rumah = AMAN
+                     # FIX LOGIC: Shift Malam Pertama -> Siang Aman!
                      w(f"(Istri {stt['shift']})", 2.5, color='#555', size=7)
-                     w("HANA DI RUMAH", 3.5, color=C_GROOMING, weight='bold', size=7)
+                     w("SIANG AMAN", 3.5, color=C_GROOMING, weight='bold', size=7)
                      w("GROOMING", 4.3, color=C_GROOMING, weight='bold')
                 
                 else:
-                     # Istri Shift Pagi/Siang/Post-Night = BAHAYA (Daycare tutup)
+                     # Shift Pagi / Siang / Post-Night (Capek) -> Daycare Tutup -> Jaga Anak
                      w(f"(Istri {stt['shift']})", 2.5, color='#555', size=7)
                      w("JAGA ANAK", 3.5, color='red', size=10, weight='bold')
                      w("PENITIPAN TUTUP", 4.5, color='red', size=7)
-                continue
+                
+                continue # Skip logika hari biasa
 
             # 2. MINGGU
             if col_idx == 0:
@@ -333,10 +339,9 @@ def draw_calendar(year, month, shifts):
     return fig
 
 # --- TAMPILAN APLIKASI ---
-st.title("📅 Aplikasi Jadwal Keluarga")
+st.title("📅 Aplikasi Jadwal Keluarga 2.0")
 
 # --- PERBAIKAN TAMPILAN PC ---
-# Gunakan rasio [1, 1] agar kolom kiri (Input) lebih lebar
 col_left, col_right = st.columns([1, 1])
 
 with col_left:
@@ -358,12 +363,12 @@ with col_left:
         st.write(f"**Shift Istri ({bulan_pilihan} 2026):**")
         cols = None
         for d in range(1, num_days + 1):
-            # UBAH: Gunakan 3 kolom saja (jangan 4) agar tidak gepeng di PC
             if (d - 1) % 3 == 0:
                 cols = st.columns(3)
             col = cols[(d - 1) % 3]
 
             def_idx = 0
+            # Contoh default shift acak (bisa dihapus jika mau kosong)
             if month_int == 1 and (d <= 17 or d == 24 or d == 30):
                 def_idx = 3
 
