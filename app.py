@@ -238,13 +238,13 @@ def draw_calendar(year, month, shifts):
             # 3. SENIN - KAMIS
             if 1 <= col_idx <= 4:
                 if stt['is_post_night'] and stt['school_active']:
-                     # REVISI WAKTU SEKOLAH: 07.00 - 10.00
-                     w("07.00 - 09.40", 0, weight='bold', color='red')
+                     # REVISI WAKTU SEKOLAH: 07.00 - 09.20
+                     w("07.00 - 09.20", 0, weight='bold', color='red')
                      w("ANTAR 2 ANAK", 1, size=7.5, weight='bold', color='red')
                      w("(Istri Plg Pagi)", 1.8, size=6.5, color='#555')
                 elif stt['school_active']:
-                    # REVISI WAKTU SEKOLAH: 07.00 - 10.00
-                    w("07.00 - 09.40", 0, weight='bold', color=C_TIME)
+                    # REVISI WAKTU SEKOLAH: 07.00 - 09.20
+                    w("07.00 - 09.20", 0, weight='bold', color=C_TIME)
                     w("Abang Sekolah", 1, size=7.5)
                 else:
                     w("LIBUR SEKOLAH", 0, color='#e67e22', weight='bold', size=8)
@@ -257,20 +257,20 @@ def draw_calendar(year, month, shifts):
                     w("(Istri Malam)", line_start, color='#555', size=7)
                     if not stt['is_post_night']:
                         w("HANA DI RUMAH", line_start+1, color=C_GROOMING, weight='bold', size=7)
-                        w("10.00", line_start+2, color=C_TIME, weight='bold', size=7)
+                        w("09.30", line_start+2, color=C_TIME, weight='bold', size=7)
                         w("GROOMING", line_start+2.8, color=C_GROOMING, weight='bold', size=7)
                     else:
-                        w("10.00", line_start+1, color=C_TIME, weight='bold')
+                        w("09.30", line_start+1, color=C_TIME, weight='bold')
                         w("GROOMING", line_start+1.8, color=C_GROOMING, weight='bold')
                 elif stt['shift'] == "Siang":
                     w(f"(Istri {stt['shift']})", line_start, color='#555', size=7)
-                    w("10.00", line_start+1, color=C_TIME, weight='bold', size=7)
+                    w("09.30", line_start+1, color=C_TIME, weight='bold', size=7)
                     w("GROOMING", line_start+1.8, color=C_GROOMING, weight='bold', size=7)
                     # REVISI TEKS JMPT -> JEMPUT
                     w("16.30 JEMPUT HANA", 5.5, color='red', weight='bold', size=7)
                 else:
                     w(f"(Istri {stt['shift']})", line_start, color='#555', size=7)
-                    w("10.00", line_start+1, color=C_TIME, weight='bold')
+                    w("09.30", line_start+1, color=C_TIME, weight='bold')
                     w("GROOMING", line_start+1.8, color=C_GROOMING, weight='bold')
 
             # 4. JUMAT
@@ -279,7 +279,7 @@ def draw_calendar(year, month, shifts):
                     if stt['is_post_night']:
                          w("07.00 ANTAR 2", 0, weight='bold', color='red')
                     else:
-                         # REVISI WAKTU JUMAT: 07.00 - 09.30
+                         # REVISI WAKTU JUMAT: 07.00 - 08.50
                          w("07.00 - 08.50", 0, weight='bold', color=C_TIME)
                     w("Abang Sekolah", 0.9, size=7)
 
